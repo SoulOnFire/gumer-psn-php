@@ -3,7 +3,7 @@ gumer-psn-php
 
 A Playstation Network API written in PHP based on gumer-psn by José A. Sächs ([github.com/jhewt/gumer-psn](https://www.github.com/jhewt/gumer-psn))
 
-This port also uses Toro [github.com/anandkunal/ToroPHP](https://www.github.com/anandkunal/ToroPHP) as I am a minimalist and want work to be done.
+This port also uses Toro ([github.com/anandkunal/ToroPHP](https://www.github.com/anandkunal/ToroPHP)) as I am a minimalist and want work to be done.
 
 **v0.1**
 
