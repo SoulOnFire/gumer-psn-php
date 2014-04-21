@@ -48,12 +48,12 @@ $login = new PSNLogIn();
 $login->setEmail($email); // Type in your email here
 $login->setPassword($password); // Type in your password here
 
-$tokens = $login->login(); // Returns an array if the login was succeed with the access and refresh tokens
+$tokens = $login->login(); // Returns an array with the access and refresh tokens only if the login was succeed
 
-// Get my profile Informations
+// Get my profile informations
 $parser = new PSNParser($region, $language); // Set your region and language f.e. PSNParser('at', 'de')
 
-echo $parser->getMyInfos($accessToken); // Where $accessToken = $tokens['access_token'], return your profile informations as JSON
+echo $parser->getMyInfos($accessToken); // Where $accessToken = $tokens['access_token'], returns your profile informations as JSON
 ```
 
 ###JavaScript
