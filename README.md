@@ -38,18 +38,18 @@ I don't have to explain this, do I?
 ##Usage
 ###PHP
 ```php
-	// Login
-	$login = new PSNLogIn();
+// Login
+$login = new PSNLogIn();
 
-	$login->setEmail($email); // Type in your email here
-	$login->setPassword($password); // Type in your password here
-	
-	$tokens = $login->login(); // Returns an array if the login was succeed with the access and refresh tokens
-	
-	// Get my profile Informations
-	$parser = new PSNParser($region, $language); // Set your region and language f.e. PSNParser('at', 'de')
-	
-	echo $parser->getMyInfos($accessToken); // Where $accessToken = $tokens['access_token'], return your profile informations as JSON
+$login->setEmail($email); // Type in your email here
+$login->setPassword($password); // Type in your password here
+
+$tokens = $login->login(); // Returns an array if the login was succeed with the access and refresh tokens
+
+// Get my profile Informations
+$parser = new PSNParser($region, $language); // Set your region and language f.e. PSNParser('at', 'de')
+
+echo $parser->getMyInfos($accessToken); // Where $accessToken = $tokens['access_token'], return your profile informations as JSON
 ```
 
 ###JavaScript
@@ -76,4 +76,5 @@ NOTE:
 	are being send to PlayStation servers and was able to create the code to send messages.
 
 	You can donate to ilendemli@live.at, if you want to support me and my work. Any support is appreciated!
+
 
