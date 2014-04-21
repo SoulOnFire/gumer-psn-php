@@ -1,8 +1,9 @@
 gumer-psn-php
 =============
 
-A Playstation Network API written in PHP based on gumer-psn by José A. Sächs (github.com/jhewt/gumer-psn)
-This port also uses Toro (github.com/anandkunal/ToroPHP) as I am a minimalist and want work to be done.
+A Playstation Network API written in PHP based on gumer-psn by José A. Sächs ([github.com/jhewt/gumer-psn](https://www.github.com/jhewt/gumer-psn))
+
+This port also uses Toro [github.com/anandkunal/ToroPHP](https://www.github.com/anandkunal/ToroPHP) as I am a minimalist and want work to be done.
 
 **v0.1**
 
@@ -30,12 +31,15 @@ For now this script can do:
 ##Requirements
 * A valid PSN account
 * A webserver (can be locally or hosted somewhere)
-* Some brain, you can directly call the PHP functions if you know what you do, or use JavaScript to call the Toro links and exchange data (I mainly used POST as the method)
+* Some brain
 
 ##Installing
 I don't have to explain this, do I?
 
 ##Usage
+
+You can directly call the PHP functions if you know what you do, or use JavaScript to call the Toro links and exchange data (I mainly used POST as the method)
+
 ###PHP
 ```php
 // Login
@@ -70,10 +74,10 @@ Contribute
 ==========
 
 NOTE:
-	I do own a PlayStation 3 system, so i can spam my friends with messages and check if they are currently online.
+	I do own a PlayStation 3 system, so i can spam my friends with messages and check if they are online.
 	Those features are within PSN's app but I do not have an Android device (my parent have one though),
 	I downloaded the PSN app on my iPhone 5 and the apps are similar. I can sniff the data which 
-	are being send to PlayStation servers and was able to create the code to send messages.
+	are send to PlayStation servers, so I was able to create the code to send messages.
 
 	You can donate to ilendemli@live.at, if you want to support me and my work. Any support is appreciated!
 
