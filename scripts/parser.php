@@ -3,7 +3,10 @@
 		private $psnURLS;
 		private $region, $language;
 		
-		public function __construct() {
+		public function __construct($region, $language) {
+			$this->region = $region;
+			$this->language = $language;
+			
 			$this->psnURLS = array(
 				'me_info' => 'https://vl.api.np.km.playstation.net/vl/api/v1/mobile/users/me/info',
 				'friendlistURL' => 'https://{{region}}-prof.np.community.playstation.net/userProfile/v1/users/{{id}}/friendList?fields=onlineId,avatarUrl,plus,personalDetail,trophySummary&friendStatus=friend',
@@ -18,24 +21,23 @@
 				'chat' => 'https://{{region}}-gmsg.np.community.playstation.net/groupMessaging/v1/messageGroups/{{chatId}}/messages?fields=@default,messageGroup,body&npLanguage={{lang}}',
 				'message' => 'https://{{region}}-gmsg.np.community.playstation.net/groupMessaging/v1/messageGroups/{{chatId}}/messages'
 			);
-		}
-		
-		public function initCURL() {
-			$this->curl = curl_init();
-		}
-		
-		public function closeCURL() {
-			curl_close($this->curl);
-		}
-		
-		public function setRegionAndLanguage($region, $language) {
-			$this->region = $region;
-			$this->language = $language;
 		
 			foreach($this->psnURLS as $key => $val) {
 				$this->psnURLS[$key] = str_replace("{{lang}}", $language, $this->psnURLS[$key]);
 				$this->psnURLS[$key] = str_replace("{{region}}", $region, $this->psnURLS[$key]);
 			}
+		}
+		
+		public function initCURL() {
+			$this->curl = curl_init();
+			
+			curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
+			curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, FALSE);
+		}
+		
+		public function closeCURL() {
+			curl_close($this->curl);
 		}
 		
 		public function getProfile($accessToken, $psnId) {
@@ -47,10 +49,10 @@
 			curl_setopt($this->curl, CURLOPT_URL, $profileData);
 			curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
-			return $output;
+			return json_encode($output, true);
 		}
 		
 		public function getMyInfos($accessToken) {
@@ -66,10 +68,10 @@
 			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['me_info']);
 			curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
-			return $output;
+			return json_encode($output, true);
 		}
 		
 		public function getConversations($accessToken, $psnId){
@@ -81,10 +83,10 @@
 			curl_setopt($this->curl, CURLOPT_URL, $conversations);
 			curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
-			return $output;
+			return json_encode($output, true);
 		}
 		
 		public function getChat($accessToken, $chatId){
@@ -96,10 +98,10 @@
 			curl_setopt($this->curl, CURLOPT_URL, $chat);
 			curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
-			return $output;
+			return json_encode($output, true);
 		}
 		
 		public function sendMessage($accessToken, $chatId, $message) {
@@ -151,10 +153,10 @@ Content-Description: message
 				'Content-Type: multipart/mixed; boundary="abcdefghijklmnopqrstuvwxyz"'
 			));
 						
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
-			echo $output;
+			echo json_encode($output, true);
 		}
 		
 		public function getFriendlist($accessToken, $psnId){
@@ -166,7 +168,7 @@ Content-Description: message
 			curl_setopt($this->curl, CURLOPT_URL, $friendlistURL);
 			curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
 			return $output;
@@ -198,24 +200,10 @@ Content-Description: message
 			curl_setopt($this->curl, CURLOPT_URL, $trophyData);
 			curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$this->closeCURL();
 			
-			return $output;
-		}
-		
-		private function curl_exec() {
-			curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
-			curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-			curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, FALSE);
-			
-			/*
-			curl_setopt($this->curl, CURLOPT_HEADER, TRUE);
-			curl_setopt($this->curl, CURLOPT_NOBODY, FALSE);
-			curl_setopt($this->curl, CURLOPT_FORBID_REUSE, FALSE);
-			*/
-			
-			return curl_exec($this->curl);
+			return json_encode($output, true);
 		}
 		
 		public function print_r($r) {

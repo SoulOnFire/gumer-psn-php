@@ -1,87 +1,157 @@
 ﻿<?php
-	error_reporting(E_ALL);
-	ini_set('display_errors', '1');
+	require_once 'scripts/login.php';
+	require_once 'scripts/parser.php';
+	require_once 'scripts/Toro.php';
+	require_once 'site/site.php';
 	
-	session_start();
-	
-	require_once('login.php');
-	require_once('parser.php');
-	
-	if (isset($_POST['refresh'])) {
-		unset($_SESSION['tokens']);
-		header("Location: index.php");
-	
-	} else if (isset($_POST['login'])) {
-		$_SESSION['email'] = $_POST['email'];
-		$_SESSION['password'] = $_POST['password'];
-		unset($_SESSION['tokens']);
-		header("Location: index.php");
-		
-	} else if (!isset($_SESSION['tokens'])) {
-		if (isset($_SESSION['email']) && isset($_SESSION['password'])) {
-			$login = new PSNLogIn();
+	ToroHook::add('404', function() {
+		echo 'Not found';
+	});
 
-			$login->setEmail($_SESSION['email']);
-			$login->setPassword($_SESSION['password']);
+	Toro::serve(array(
+		'/' => 'Site',
+		'/login' => 'Login',
+		'/refresh' => 'Refresh',
+		'/me' => 'Me',
+		'/profile' => 'Profile',
+		'/friends' => 'Friends',
+		'/trophies' => 'Trophy',
+		'/conversations' => 'Conversation',
+		'/chat' => 'Chat',
+		'/chat/message' => 'Message'
+	));
+	
+	class Message {
+		function post() {
+			$accessToken = $_POST['accessToken'];
+			$chatId = $_POST['chatId'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
+			$message = $_POST['message'];
 			
-			$tokens = $login->login();
-			$_SESSION['tokens'] = $tokens;
+			$parser = new PSNParser($region, $language);
 			
-		} else {
-			$tokens = -4;
+			echo $parser->sendMessage($accessToken, $chatId, $message);
 		}
-		
-	} else {
-		$tokens = $_SESSION['tokens'];
 	}
 	
-	if(is_array($tokens)) {
-		$accessToken = $tokens[0];
-		$refreshToken = $tokens[1];
-		
-		if(empty($tokens[0]) || empty($tokens[1])) {
-			$tokens = -5;
+	class Chat {
+		function post() {
+			$accessToken = $_POST['accessToken'];
+			$chatId = $_POST['chatId'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
 			
-		} else {
-			$parser = new PSNParser();
-			$parser->setRegionAndLanguage('at', 'de');
+			$parser = new PSNParser($region, $language);
 			
-			$myInfos = $parser->getMyInfos($accessToken);
-			$myInfosAsArray = json_decode($myInfos, true);
-			
-			$myProfile = $parser->getProfile($accessToken, $myInfosAsArray['onlineId']);
-			$myProfileAsArray = json_decode($myProfile, true);
-			
-			$friendlist = $parser->getFriendlist($accessToken, $myInfosAsArray['onlineId']);
-			$friendlistAsArray = json_decode($friendlist, true);
-			
-			$friendProfile = $parser->getProfile($accessToken, 'JSachs13');
-			$friendProfileAsArray = json_decode($friendProfile, true);
-			
-			$trophyData = $parser->getTrophies($accessToken, $myInfosAsArray['onlineId'], 'm', 0, 100);
-			$trophyDataAsArray = json_decode($trophyData, true);
-			
-			$conversations = $parser->getConversations($accessToken, $myInfosAsArray['onlineId']);
-			$conversationsAsArray = json_decode($conversations, true);
-			
-			/*
-			$chat = $parser->getChat($accessToken, '##'); // ## must be the conversation id which can be found in $conversationAsArray
-			$chatAsArray = json_decode($chat, true);
-			
-			// $parser->print_r($chatAsArray);
-			$parser->sendMessage($accessToken, '##', 'TEST-MESSAGE: ' .date('H:i:s'));
-			 */
+			echo $parser->getChat($accessToken, $chatId);
 		}
-	} 
+	}
 	
-	if(!is_array($tokens)) {
-		echo $tokens;
+	class Conversation {
+		function post() {
+			$accessToken = $_POST['accessToken'];
+			$profileId = $_POST['profileId'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
+	
+			$parser = new PSNParser($region, $language);
+	
+			echo $parser->getConversations($accessToken, $profileId);
+		}
+	}
+			
+	class Trophy {
+		function post() {
+			$accessToken = $_POST['accessToken'];
+			$profileId = $_POST['profileId'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
+			$iconSize = $_POST['iconSize'];
+			$offset = $_POST['offset'];
+			$limit = $_POST['limit'];
+			
+			$parser = new PSNParser($region, $language);
+	
+			echo $parser->getTrophies($accessToken, $profileId, $iconSize, $offset, $limit);
+		}
+	}
+	
+	class Friends {
+		function post() {
+			$accessToken = $_POST['accessToken'];
+			$profileId = $_POST['profileId'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
+			
+			$parser = new PSNParser($region, $language);
+			
+			echo $parser->getFriendlist($accessToken, $profileId);
+		}
+	}
+	
+	class Profile {
+		function post() {			
+			$accessToken = $_POST['accessToken'];
+			$profileId = $_POST['profileId'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
+			
+			$parser = new PSNParser($region, $language);
+			
+			echo $parser->getProfile($accessToken, $profileId);
+		}
+	}
+			
+	class Me {
+		function get() {
+			$accessToken = $_POST['accessToken'];
+			$region = $_POST['region'];
+			$language = $_POST['language'];
+			
+			$parser = new PSNParser($region, $language);
+			
+			echo $parser->getMyInfos($accessToken);
+		}
+	}
+	
+	class Refresh {
+		function post() {
+			$refreshToken = $_POST['refreshToken'];
+			
+			$login = new PSNLogIn();
+			
+			echo $login->refreshTokens($refreshToken);
+		}
+	}
+	
+	class Login {
+		private $emailRegex;
+		
+		function __construct() {
+			$this->emailRegex = '/^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$/'; 
+		}
+	
+		function post() {
+			$email = $_POST['email'];
+			$password = $_POST['password'];
+			
+			if (preg_match($this->emailRegex, $email)) {
+				 if (!empty($password)) {
+					$login = new PSNLogIn();
+
+					$login->setEmail($email);
+					$login->setPassword($password);
+					
+					echo $login->login();
+			
+				 } else {
+					echo 'Please enter your password!';
+				 }
+				 
+			} else { 
+				 echo 'Please enter a valid e-Mail!';
+			} 
+		}
 	}
 ?>
-<br/>
-<form action="index.php" method="POST">
-	<input type="email" name="email" placeholder="e-Mail" />
-	<input type="password" name="password" placeholder="Password" />
-	<input type="submit" name="login" value="LogIn" />
-	<input type="submit" name="refresh" value="Refresh" />
-</form>

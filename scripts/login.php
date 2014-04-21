@@ -3,7 +3,6 @@
 		private $psnURLS, $psnVars;
 		private $csrfToken;
 		private $email, $password;
-		private $accessToken, $refreshToken;
 		private $authCodeRegex, $csrfTokenRegex;
 		private $cookieDir, $cookieFile;
 		
@@ -42,6 +41,10 @@
 		
 		public function initCURL() {
 			$this->curl = curl_init();
+			
+			curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
+			curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, FALSE);
 		}
 		
 		public function closeCURL() {
@@ -54,14 +57,14 @@
 			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['signIn']);
 			curl_setopt($this->curl, CURLOPT_COOKIEJAR, $this->cookieFile);
 			
-			$output = $this->curl_exec();			
+			$output = curl_exec($this->curl);			
 			preg_match($this->csrfTokenRegex, $output, $matches);
 			
 			if (count($matches) > 0) {
 				// echo "CSRF-Token: " .$matches[1] ."<br/>\n";
 				
 				$this->psnVars['csrfToken'] = $matches[1];
-				$this->getAuthCode($this->psnVars['csrfToken']);
+				$tokens = $this->getAuthCode($this->psnVars['csrfToken']);
 			}
 			
 			$this->closeCURL();
@@ -74,9 +77,17 @@
 			
 			} else if (empty($this->psnVars['csrfToken']) || empty($this->psnVars['authCode'])) {
 				return -3;
+			
+			} else if (empty($tokens['access_token']) || empty($tokens['refresh_token'])) {
+				return -4;
 				
 			} else {
-				return array($this->accessToken, $this->refreshToken);
+				$toReturn = array(
+					'accessToken' => $tokens['access_token'],
+					'refreshToken' => $tokens['refresh_token']
+				);
+				
+				return $toReturn($output, true);
 			}
 		}
 		
@@ -95,14 +106,14 @@
 			curl_setopt($this->curl, CURLOPT_POSTFIELDS, http_build_query($postData));
 			curl_setopt($this->curl, CURLOPT_COOKIEFILE, $this->cookieFile);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			preg_match($this->authCodeRegex, $output, $matches);
 			
 			if (count($matches) > 0) {
 				// echo "AUTH-Code: " .$matches[1] ."<br/>\n";
 				
 				$this->psnVars['authCode'] = $matches[1];
-				$this->getAccessToken($this->psnVars['authCode']);
+				return $this->getAccessToken($this->psnVars['authCode']);
 			}
 		}
 		
@@ -123,28 +134,53 @@
 			curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postData);
 			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['oauth']);
 			
-			$output = $this->curl_exec();
+			$output = curl_exec($this->curl);
 			$jsonData = json_decode($output, true);
 			
-			$this->accessToken = $jsonData['access_token'];
-			$this->refreshToken = $jsonData['refresh_token'];
-			
-			// echo "Access-Token: " .$this->accessToken ."<br/>\n";
-			// echo "Refresh-Token: " .$this->refreshToken ."<br/>\n";
+			return $jsonData;
 		}
 		
-		private function curl_exec() {
-			curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
-			curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-			curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, FALSE);
+		public function refreshTokens($refreshToken) {
+			$this->initCURL();
 			
-			/*
-			curl_setopt($this->curl, CURLOPT_HEADER, TRUE);
-			curl_setopt($this->curl, CURLOPT_NOBODY, FALSE);
-			curl_setopt($this->curl, CURLOPT_FORBID_REUSE, FALSE);
-			*/
+			$dataArray = array(
+				'grant_type' => 'refresh_token',
+				'client_id' => $this->psnVars['client_id'],
+				'client_secret' => $this->psnVars['client_secret'],
+				'refresh_token' => $refreshToken,
+				'redirect_uri' => $this->psnVars['redirectURL'],
+				'state' => 'x',
+				'scope' => $this->psnVars['scope_psn'],
+				'duid' => $this->psnVars['duid']
+			);
 			
-			return curl_exec($this->curl);
+			$postData = http_build_query($dataArray);
+			
+			curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postData);
+			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['oauth']);
+			
+			$output = curl_exec($this->curl);
+			$this->closeCURL();
+			
+			$jsonData = json_decode($output, true);
+			
+			if (empty($jsonData['access_token']) || empty($jsonData['refresh_token'])) {
+				return -4;
+				
+			} else {
+				$toReturn = array(
+					'accessToken' => $jsonData['access_token'],
+					'refreshToken' => $jsonData['refresh_token']
+				);
+				
+				return $toReturn($output, true);
+			}
+		}
+		
+		public function print_r($r) {
+			echo '<pre>';
+			print_r($r);
+			echo '</pre>';
 		}
 	}
 ?>
