@@ -1,34 +1,32 @@
 <?php
 	class PSNLogIn {
 		private $psnURLS, $psnVars;
-		private $csrfToken;
 		private $email, $password;
-		private $authCodeRegex, $csrfTokenRegex;
 		private $cookieDir, $cookieFile;
-		
+				
 		public function __construct() {
 			$this->cookieDir = "./tmp/";
 			$this->cookieFile = $this->cookieDir ."psn_" .$_SERVER["REMOTE_ADDR"] .".cookie";
 			
 			$this->psnVars = array(
-				'redirectURL' => 'com.scee.psxandroid.scecompcall://redirect',
+				'SENBaseURL' => 'https://auth.api.sonyentertainmentnetwork.com',
+				'redirectURL_oauth' => 'com.scee.psxandroid.scecompcall://redirect',
 				'client_id' => 'b0d0d7ad-bb99-4ab1-b25e-afa0c76577b0',
 				'scope' => 'sceapp',
 				'scope_psn' => 'psn:sceapp',
 				'csrfToken' => '',
 				'authCode' => '',
 				'client_secret' => 'Zo4y8eGIa3oazIEp',
-				'duid' => '00000005006401283335353338373035333434333134313a433635303220202020202020202020202020202020'
+				'duid' => '00000005006401283335353338373035333434333134313a433635303220202020202020202020202020202020',
+				'cltm' => '1399637146935',
+				'service_entity' => 'urn:service-entity:psn'
 			);
 			
 			$this->psnURLS = array(
-				'signIn' => 'https://reg.api.km.playstation.net/regcam/mobile/sign-in.html?redirectURL=' .$this->psnVars['redirectURL'] .'&client_id=' .$this->psnVars['client_id'] .'&scope=' .$this->psnVars['scope'],
-				'signInPost' => 'https://reg.api.km.playstation.net/regcam/mobile/signin',
+				'signIn' => $this->psnVars['SENBaseURL'] .'/2.0/oauth/authorize?response_type=code&service_entity=' .$this->psnVars['service_entity'] .'&returnAuthCode=true&cltm=' .$this->psnVars['cltm'] .'&redirect_uri=' .$this->psnVars['redirectURL_oauth'] .'&client_id=' .$this->psnVars['client_id'] .'&scope=' .$this->psnVars['scope_psn'],
+				'signInPost' => $this->psnVars['SENBaseURL'] .'/login.do',
 				'oauth' => 'https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token'
 			);
-			
-			$this->authCodeRegex = '/authCode\=([0-9A-Za-z]*)(?=[\'])/i';
-			$this->csrfTokenRegex = '/<input.*?csrfToken.*?value="(.*?)".*?>/i';
 		}
 		
 		public function setEmail($email) {
@@ -40,81 +38,107 @@
 		}
 		
 		public function initCURL() {
+			if(file_exists($this->cookieFile))	
+				unlink($this->cookieFile);
+		
 			$this->curl = curl_init();
 			
-			curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
-			curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-			curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, FALSE);
+			$options = array(
+				CURLOPT_RETURNTRANSFER => TRUE,
+				CURLOPT_SSL_VERIFYPEER => FALSE,
+				CURLOPT_FOLLOWLOCATION => FALSE,
+				CURLOPT_COOKIEFILE => $this->cookieFile
+			);
+
+			curl_setopt_array($this->curl, $options);
+			
+			touch($this->cookieFile);
 		}
 		
 		public function closeCURL() {
 			curl_close($this->curl);
+			
+			if(file_exists($this->cookieFile))	
+				unlink($this->cookieFile);
 		}
 		
 		public function login() {
 			$this->initCURL();
 			
-			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['signIn']);
-			curl_setopt($this->curl, CURLOPT_COOKIEJAR, $this->cookieFile);
+			$options = array(
+				CURLOPT_URL => $this->psnURLS['signIn'],
+				CURLOPT_HEADER => FALSE,
+				CURLOPT_POST => FALSE
+			);
+
+			curl_setopt_array($this->curl, $options);
 			
-			$output = curl_exec($this->curl);			
-			preg_match($this->csrfTokenRegex, $output, $matches);
+			$output = curl_exec($this->curl);
+			$header = $this->get_headers_from_curl_response($output);
 			
-			if (count($matches) > 0) {
-				// echo "CSRF-Token: " .$matches[1] ."<br/>\n";
-				
-				$this->psnVars['csrfToken'] = $matches[1];
-				$tokens = $this->getAuthCode($this->psnVars['csrfToken']);
-			}
+			$tokens = $this->getAuth($header['Location']);
 			
 			$this->closeCURL();
 			
-			if (empty($this->psnVars['csrfToken'])) {
-				return -1;
-			
-			} else if (empty($this->psnVars['authCode'])) {
-				return -2;
-			
-			} else if (empty($this->psnVars['csrfToken']) || empty($this->psnVars['authCode'])) {
-				return -3;
-			
-			} else if (empty($tokens['access_token']) || empty($tokens['refresh_token'])) {
-				return -4;
-				
-			} else {
-				$toReturn = array(
-					'accessToken' => $tokens['access_token'],
-					'refreshToken' => $tokens['refresh_token']
-				);
-				
-				return $toReturn($output, true);
-			}
+			echo json_encode($tokens);
 		}
 		
-		private function getAuthCode($csrfToken) {
+		private function getAuth($location) {
+			$headerData = array(
+				'Origin: https://auth.api.sonyentertainmentnetwork.com',
+				'Referer: ' .$location
+			);
+		
 			$postData = array(
-				'email' => $this->email,
-				'password' => $this->password,
-				'csrfToken' => $csrfToken,
-				'client_id' => $this->psnVars['client_id'],
-				'scope' => $this->psnVars['scope'],
-				'redirectURL' => $this->psnVars['redirectURL'],
-				'locale' => ''
+				'j_username' => $this->email,
+				'j_password' => $this->password,
+				'params' => 'service_entity=psn'
 			);
 			
-			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['signInPost']);
-			curl_setopt($this->curl, CURLOPT_POSTFIELDS, http_build_query($postData));
-			curl_setopt($this->curl, CURLOPT_COOKIEFILE, $this->cookieFile);
+			$options = array(
+				CURLOPT_URL => $this->psnURLS['signInPost'],
+				CURLOPT_POST => TRUE,
+				CURLOPT_HEADER => TRUE,
+				CURLOPT_POSTFIELDS => http_build_query($postData),
+				CURLOPT_HTTPHEADER => $headerData
+			);
+
+			curl_setopt_array($this->curl, $options);
 			
 			$output = curl_exec($this->curl);
-			preg_match($this->authCodeRegex, $output, $matches);
+			$header = $this->get_headers_from_curl_response($output);
 			
-			if (count($matches) > 0) {
-				// echo "AUTH-Code: " .$matches[1] ."<br/>\n";
-				
-				$this->psnVars['authCode'] = $matches[1];
-				return $this->getAccessToken($this->psnVars['authCode']);
+			$options = array(
+				CURLOPT_URL => $header['Location'],
+				CURLOPT_POST => FALSE,
+				CURLOPT_HEADER => TRUE
+			);
+
+			curl_setopt_array($this->curl, $options);
+			
+			$output = curl_exec($this->curl);
+			$header = $this->get_headers_from_curl_response($output);
+			
+			$location = urldecode($header['Location']);
+			$authCode = substr($location, strpos($location, 'authCode=') +9, 6);
+			
+			return $this->getAccessToken($authCode);
+		}
+		
+		function get_headers_from_curl_response($response) {
+			$headers = array();
+			$header_text = substr($response, 0, strpos($response, "\r\n\r\n"));
+			foreach(explode("\r\n", $header_text) as $i => $line) {
+				if($i === 0) {
+					$headers['http_code'] = $line;
+				} else {
+					list ($key, $value) = explode(': ', $line);
+
+					$headers[$key] = $value;
+				}
 			}
+
+			return $headers;
 		}
 		
 		private function getAccessToken($authCode) {
@@ -123,7 +147,7 @@
 				'client_id' => $this->psnVars['client_id'],
 				'client_secret' => $this->psnVars['client_secret'],
 				'code' => $authCode,
-				'redirect_uri' => $this->psnVars['redirectURL'],
+				'redirect_uri' => $this->psnVars['redirectURL_oauth'],
 				'state' => 'x',
 				'scope' => $this->psnVars['scope_psn'],
 				'duid' => $this->psnVars['duid']
@@ -131,10 +155,16 @@
 			
 			$postData = http_build_query($dataArray);
 			
-			curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postData);
-			curl_setopt($this->curl, CURLOPT_URL, $this->psnURLS['oauth']);
+			$options = array(
+				CURLOPT_URL => $this->psnURLS['oauth'],
+				CURLOPT_POST => TRUE,
+				CURLOPT_HEADER => FALSE,
+				CURLOPT_POSTFIELDS => $postData
+			);
+
+			curl_setopt_array($this->curl, $options);
 			
-			$output = curl_exec($this->curl);
+			$output = curl_exec($this->curl);			
 			$jsonData = json_decode($output, true);
 			
 			return $jsonData;
@@ -173,7 +203,7 @@
 					'refreshToken' => $jsonData['refresh_token']
 				);
 				
-				return $toReturn($output, true);
+				return json_encode($toReturn);
 			}
 		}
 		
