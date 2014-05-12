@@ -5,7 +5,12 @@ A Playstation Network API written in PHP based on gumer-psn by José A. Sächs (
 
 This port also uses Toro ([github.com/anandkunal/ToroPHP](https://www.github.com/anandkunal/ToroPHP)) as I am a minimalist and want work to be done.
 
-**v0.1**
+**v0.2**:
+	updated for the new login procedure by sone
+	make the code a bit more tidier
+
+**v0.1**:
+	initial release
 
 ##About
 This script is based on gumer-psn which is developed in Node.js.
