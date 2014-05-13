@@ -154,8 +154,8 @@
 			
 			$options = array(
 				CURLOPT_URL => $this->psnURLS['oauth'],
-				CURLOPT_POST => TRUE,
-				CURLOPT_HEADER => FALSE,
+				CURLOPT_POST => 1,
+				CURLOPT_HEADER => 0,
 				CURLOPT_POSTFIELDS => $postData
 			);
 
