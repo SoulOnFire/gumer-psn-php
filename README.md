@@ -5,6 +5,8 @@ A Playstation Network API written in PHP based on gumer-psn by José A. Sächs (
 
 This port also uses Toro ([github.com/anandkunal/ToroPHP](https://www.github.com/anandkunal/ToroPHP)) as I am a minimalist and want work to be done.
 
+Try it out here: http://ilendemli.info/PSN/index.php/
+
 **Changelogs:**
 * **v0.2**:
 	* updated for the new login procedure by sony
