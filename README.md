@@ -40,7 +40,7 @@ For now this script can do:
 * Some brain
 
 ##Installing
-I don't have to explain this, do I?
+I don't have to explain this, do I? But let me just say that you need a folder called 'tmp' in the same folder where the login.php is
 
 ##Usage
 
@@ -63,6 +63,16 @@ echo $parser->getMyInfos($accessToken); // Where $accessToken = $tokens['access_
 ```
 
 ###JavaScript
+```javascript
+$.post("/login", { 
+	'email': email,
+	'password': password
+	
+}).done(function(data) {
+	alert(data);
+});
+```
+
 ```javascript
 $.post("/me", { 
 	'accessToken': accessToken,

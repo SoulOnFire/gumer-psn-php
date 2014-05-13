@@ -5,8 +5,7 @@
 		private $cookieDir, $cookieFile;
 				
 		public function __construct() {
-			$this->cookieDir = "./tmp/";
-			$this->cookieFile = $this->cookieDir ."psn_" .$_SERVER["REMOTE_ADDR"] .".cookie";
+			$this->cookieFile = realpath(dirname(__FILE__)) .'/tmp/psn_' .str_replace('.', '_', $_SERVER["REMOTE_ADDR"]) .'.cookie';
 			
 			$this->psnVars = array(
 				'SENBaseURL' => 'https://auth.api.sonyentertainmentnetwork.com',
@@ -14,8 +13,6 @@
 				'client_id' => 'b0d0d7ad-bb99-4ab1-b25e-afa0c76577b0',
 				'scope' => 'sceapp',
 				'scope_psn' => 'psn:sceapp',
-				'csrfToken' => '',
-				'authCode' => '',
 				'client_secret' => 'Zo4y8eGIa3oazIEp',
 				'duid' => '00000005006401283335353338373035333434333134313a433635303220202020202020202020202020202020',
 				'cltm' => '1399637146935',
@@ -40,19 +37,18 @@
 		public function initCURL() {
 			if(file_exists($this->cookieFile))	
 				unlink($this->cookieFile);
+				
+			touch($this->cookieFile);
 		
 			$this->curl = curl_init();
 			
 			$options = array(
-				CURLOPT_RETURNTRANSFER => TRUE,
-				CURLOPT_SSL_VERIFYPEER => FALSE,
-				CURLOPT_FOLLOWLOCATION => FALSE,
+				CURLOPT_SSL_VERIFYPEER => 0,
+				CURLOPT_RETURNTRANSFER => 1,
 				CURLOPT_COOKIEFILE => $this->cookieFile
 			);
 
 			curl_setopt_array($this->curl, $options);
-			
-			touch($this->cookieFile);
 		}
 		
 		public function closeCURL() {
@@ -67,13 +63,13 @@
 			
 			$options = array(
 				CURLOPT_URL => $this->psnURLS['signIn'],
-				CURLOPT_HEADER => FALSE,
-				CURLOPT_POST => FALSE
+				CURLOPT_HEADER => 1,
+				CURLOPT_POST => 0
 			);
 
 			curl_setopt_array($this->curl, $options);
 			
-			$output = curl_exec($this->curl);
+			$output = curl_exec($this->curl);		
 			$header = $this->get_headers_from_curl_response($output);
 			
 			$tokens = $this->getAuth($header['Location']);
@@ -97,8 +93,8 @@
 			
 			$options = array(
 				CURLOPT_URL => $this->psnURLS['signInPost'],
-				CURLOPT_POST => TRUE,
-				CURLOPT_HEADER => TRUE,
+				CURLOPT_POST => 1,
+				CURLOPT_HEADER => 1,
 				CURLOPT_POSTFIELDS => http_build_query($postData),
 				CURLOPT_HTTPHEADER => $headerData
 			);
@@ -110,8 +106,8 @@
 			
 			$options = array(
 				CURLOPT_URL => $header['Location'],
-				CURLOPT_POST => FALSE,
-				CURLOPT_HEADER => TRUE
+				CURLOPT_POST => 0,
+				CURLOPT_HEADER => 1
 			);
 
 			curl_setopt_array($this->curl, $options);
@@ -128,6 +124,7 @@
 		function get_headers_from_curl_response($response) {
 			$headers = array();
 			$header_text = substr($response, 0, strpos($response, "\r\n\r\n"));
+			
 			foreach(explode("\r\n", $header_text) as $i => $line) {
 				if($i === 0) {
 					$headers['http_code'] = $line;
