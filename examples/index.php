@@ -1,6 +1,5 @@
 <?php
-	require_once 'scripts/login.php';
-	require_once 'scripts/parser.php';
+	require_once '../vendor/autoload.php';
 	require_once 'scripts/Toro.php';
 	require_once 'site/site.php';
 	
