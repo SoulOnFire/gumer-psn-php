@@ -1,0 +1,24 @@
+{
+	"name": "gumer/gumer-psn-php",
+	"authors": [
+		{
+			"name": "Gumer",
+			"email": "ilendemli@live.at",
+			"homepage": "http://ilendemli.info"
+		},
+		{
+			"name": "Bradley Weston",
+			"email": "b.weston@outlook.com",
+			"homepage": "http://bweston.me"
+		}
+	],
+	"require": {
+		"guzzle/guzzle": "3.8.*@dev",
+		"illuminate/support": "~4.1"
+	},
+	"autoload": {
+		"psr-0": {
+			"Gumer": "./src"
+		}
+	}
+}
